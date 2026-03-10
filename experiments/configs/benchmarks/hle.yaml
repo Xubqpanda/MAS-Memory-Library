@@ -1,29 +1,21 @@
 # experiments/configs/benchmarks/hle.yaml
-# HLE（Humanity's Last Exam）基准配置
-# 与 method config 合并后通过 run_experiment.py 运行
 
 benchmark:
-  name: hle
-  data_path: experiments/benchmarks/HLE/data/hle.json   # 相对于仓库根目录
+  name: HLE
+  data_path: experiments/benchmarks/HLE/data/hle.json
 
 model:
-  solver: gpt-4o          # 求解模型（支持 litellm 的任意 provider）
-  judge:  gpt-4o          # judge 模型（用于 HLEEnv 内部打分）
-  # 若使用推理模型（o1/o3），可开启：
-  # reasoning_effort: high
+  solver: gpt-5.2
+  judge:  gpt-5.2
 
 evaluation:
-  category:  null         # null = 全类别；填写如 "math" / "science" 则按类别过滤
-  text_only: true         # true = 跳过多模态（含图片）题目
-  limit:     null         # null = 全量；调试时填小数字如 10
-  max_workers: 1          # 1 = 顺序执行；>1 = 并行（仅 EmptyMemory 安全）
+  category:    null
+  text_only:   True
+  limit:       null
+  max_workers: 1
 
 output:
   dir:     experiments/results
-  verbose: false          # true = 逐题打印详情
+  verbose: false
 
-experiment:
-  # 以下字段由 method config 覆盖，此处留占位
-  name:           ~
-  memory_method:  ~
-  agent_framework: ~
+# ← experiment 块完全删掉，由 method yaml 提供

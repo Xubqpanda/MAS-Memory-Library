@@ -1,6 +1,4 @@
-# docs/overall.md, Efficient Multi-Agent Memory System (EMAMS) 项目整体结构设计
-
-
+MAS-Memory-Library:
 ├── assets/                                      # 相关资源，如图示等
 ├── docs/                                        # 文档和设计说明
 ├── experiments/                                 # 实验脚本和配置
@@ -39,30 +37,31 @@
 │   ├── llm/                                     # LLM 相关的接口和实现
 │   │   ├── __init__.py                          # llm 模块的初始化
 │   │   ├── base.py                              # LLMBase 抽象类
+│   │   ├── llm_io_logger.py                     # LLM I/O 日志记录器
 │   │   ├── model_caller.py                      # ModelCaller 实现
 │   │   └── token_tracker.py                     # TokenTracker 实现
-│   ├── mas/                                     # 多智能体系统相关的接口和实现
-│   │   ├── autogen/                             # AutoGenMAS(MetaMAS)
+│   ├── solver/                                  # 智能体系统相关的接口和实现
+│   │   ├── autogen/                             # AutoGenMAS(MetaSolver)
 │   │   │   ├── __init__.py                      # AutoGenMAS 模块的初始化
-│   │   │   ├── autogen_prompt.py                # AutoGenMAS(MetaMAS) 的提示词设计
-│   │   │   └── autogen.py                       # AutoGenMAS(MetaMAS) 的核心实现
-│   │   ├── dylan/                               # DylanMAS(MetaMAS)
+│   │   │   ├── autogen_prompt.py                # AutoGenMAS(MetaSolver) 的提示词设计
+│   │   │   └── autogen.py                       # AutoGenMAS(MetaSolver) 的核心实现
+│   │   ├── dylan/                               # DylanMAS(MetaSolver)
 │   │   │   ├── __init__.py                      # DylanMAS 模块的初始化
-│   │   │   ├── dylan_prompt.py                  # DylanMAS(MetaMAS) 的提示词设计
-│   │   │   ├── dylan.py                         # DylanMAS(MetaMAS) 的核心实现  
-│   │   │   └── neuron.py                        # DylanMAS(MetaMAS) 的神经元实现
-│   │   ├── macnet/                              # MacNetMAS(MetaMAS)
+│   │   │   ├── dylan_prompt.py                  # DylanMAS(MetaSolver) 的提示词设计
+│   │   │   ├── dylan.py                         # DylanMAS(MetaSolver) 的核心实现  
+│   │   │   └── neuron.py                        # DylanMAS(MetaSolver) 的神经元实现
+│   │   ├── macnet/                              # MacNetMAS(MetaSolver)
 │   │   │   ├── __init__.py                      # MacNetMAS 模块的初始化
-│   │   │   ├── graph_mas.py                     # MacNetMAS(MetaMAS) 的核心实现
-│   │   │   ├── graph_prompt.py                  # MacNetMAS(MetaMAS) 的提示词设计
-│   │   │   ├── graph.py                         # MacNetMAS(MetaMAS) 的图结构实现
-│   │   │   └── node.py                          # MacNetMAS(MetaMAS) 的节点实现
-|   │   ├── single_agent/                        # SingleAgentSolver(MetaMAS)
+│   │   │   ├── graph_mas.py                     # MacNetMAS(MetaSolver) 的核心实现
+│   │   │   ├── graph_prompt.py                  # MacNetMAS(MetaSolver) 的提示词设计
+│   │   │   ├── graph.py                         # MacNetMAS(MetaSolver) 的图结构实现
+│   │   │   └── node.py                          # MacNetMAS(MetaSolver) 的节点实现
+|   │   ├── single_agent/                        # SingleAgentSolver(MetaSolver)
 │   │   │   ├── __init__.py                      # SingleAgentSolver 模块的初始化
-│   │   │   └── single_agent.py                  # SingleAgentSolver(MetaMAS) 的核心实现
+│   │   │   └── single_agent.py                  # SingleAgentSolver(MetaSolver) 的核心实现
 │   │   ├── __init__.py                          # MAS 相关的抽象和接口设计
 │   │   ├── format.py                            # 任务输入输出的格式规范
-│   │   └── base.py                              # MetaMAS 抽象类
+│   │   └── base.py                              # MetaSolver 抽象类
 │   ├─ reasoning/                                # Reasoning
 |   |   ├── __init__.py                          # Reasoning 模块的初始化
 |   |   └── base.py                              # ReasoningConfig、ReasoningBase、ReasoningIO
@@ -77,7 +76,7 @@
 │   │   |   ├── memorybank.py                    # MemoryBankMASMemory 实现
 │   │   |   ├── metagpt.py                       # MetaGPTMASMemory 实现
 │   │   |   ├── voyager.py                       # VoyagerMASMemory 实现
-│   │   |   └── ours/                            # ours 实现   
+│   │   |   └── skillmem/                        # ours 实现   
 │   │   ├── __init__.py                          # memory 模块的初始化
 │   │   ├── base.py                              # MemoryBase 抽象类
 │   │   └── prompt.py                            # Memory 相关的提示词设计

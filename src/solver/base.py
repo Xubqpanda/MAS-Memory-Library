@@ -11,8 +11,8 @@ from typing import Optional, Dict, Iterable
 
 from src.llm import Message
 from src.reasoning import ReasoningBase, ReasoningConfig
-from src.memory.base import SolverMemoryBase
-from src.envs.base import Env  # 迁移至 src/envs，此处 re-export
+from src.memory.base import MemoryBase
+from src.envs.base import Env  
 
 
 # ─── Agent ────────────────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ class MetaSolver(ABC):
     """
     agents_team: Dict[str, Agent] = field(default_factory=dict)
     env: Optional[Env] = None
-    meta_memory: Optional[SolverMemoryBase] = None
+    meta_memory: Optional[MemoryBase] = None
 
     def hire(self, agents: Iterable[Agent]) -> None:
         for agent in agents:
@@ -84,7 +84,7 @@ class MetaSolver(ABC):
     def build_system(
         self,
         reasoning: ReasoningBase,
-        memory: SolverMemoryBase,
+        memory: MemoryBase,
         env: Env,
         config: dict,
     ) -> None:

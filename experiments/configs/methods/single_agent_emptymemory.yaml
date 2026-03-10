@@ -1,20 +1,12 @@
 # experiments/configs/methods/single_agent_emptymemory.yaml
-# ================================================================
-# 方法设置：No Agent Framework + Empty Memory（纯 baseline）
-# 与具体跑哪个数据集完全无关
-# ================================================================
 
 experiment:
-  name: single_agent_emptymemory        # 结果目录名，建议与文件名保持一致
-  memory_method: empty                  # empty / generative / voyager / g_memory / ours
-  agent_framework: single_agent         # single_agent / autogen / dylan / macnet
+  name:            single_agent_emptymemory
+  memory_method:   empty
+  agent_framework: single_agent
 
-model:
-  solver: o4-mini           # 被评测的模型
-  judge: gpt-5                 # 打分模型
-  reasoning_effort: null        # null / low / medium / high（o1/o3 系列用）
+memory_config:
+  namespace:   hle_empty
+  working_dir: experiments/results/memory_store   # 相对仓库根，runner 里会拼 REPO_ROOT
 
-output:
-  dir: experiments/results
-  max_workers: 1                # 并行 trial 数；1 = 顺序执行（debug 用）
-  verbose: true                # true 时打印 judge 完整输出
+mas_config: {}   # SingleAgentSolver 目前没有额外超参，保留占位

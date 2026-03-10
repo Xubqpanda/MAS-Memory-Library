@@ -22,12 +22,13 @@ SingleAgentSolver：单 agent solver baseline。
   - token 消耗通过 observer 在每题结束后打印快照，方便调试。
 """
 
+from typing import Optional
 from dataclasses import dataclass
 
 from src.envs.base       import Env
 from src.solver.base        import MetaSolver
 from src.reasoning       import ReasoningBase, ReasoningConfig
-from src.memory.base     import SolverMemoryBase
+from src.memory.base     import MemoryBase
 from src.common.message  import AgentMessage
 from src.llm             import Message, token_tracker
 from src.solver.format      import format_task_prompt_with_insights, format_task_context
@@ -35,7 +36,8 @@ from src.solver.format      import format_task_prompt_with_insights, format_task
 SINGLE_AGENT_SYSTEM_PROMPT = (
     "Your response should be in the following format:\n"
     "Explanation: {your explanation for your answer choice}\n"
-    "Answer: {your answer}"
+    "Answer: {your chosen answer}\n"
+    "Confidence: {your confidence score between 0% and 100% for your answer}"
 )
 
 
@@ -52,7 +54,7 @@ class SingleAgentSolver(MetaSolver):
     def build_system(
         self,
         reasoning: ReasoningBase,
-        solver_memory: SolverMemoryBase,
+        solver_memory: MemoryBase,
         env: Env,
         config: dict,
     ) -> None:
@@ -67,8 +69,8 @@ class SingleAgentSolver(MetaSolver):
         """
         if not isinstance(reasoning, ReasoningBase):
             raise TypeError("reasoning must be an instance of ReasoningBase")
-        if not isinstance(solver_memory, SolverMemoryBase):
-            raise TypeError("solver_memory must be an instance of SolverMemoryBase")
+        if not isinstance(solver_memory, MemoryBase):
+            raise TypeError("solver_memory must be an instance of MemoryBase")
         if not isinstance(env, Env):
             raise TypeError("env must be an instance of Env")
 
@@ -139,9 +141,22 @@ class SingleAgentSolver(MetaSolver):
             )
             self.notify_observers(user_prompt)
 
+            # 如果 context_hint 里有图片（base64），user message 附加图片
+            image_b64: Optional[str] = context_hint.get("image_b64")
+            image_media_type: str    = context_hint.get("image_media_type", "image/jpeg")
+            if image_b64:
+                user_content = [
+                    {"type": "input_text",  "text": user_prompt},
+                    {"type": "input_image", "image_url": {
+                        "url": f"data:{image_media_type};base64,{image_b64}"
+                    }},
+                ]
+            else:
+                user_content = user_prompt
+
             messages = [
                 Message("system", self._system_prompt),
-                Message("user",   user_prompt),
+                Message("user",   user_content),
             ]
 
             answer: str = self._reasoning(messages, self.reasoning_config)

@@ -13,7 +13,7 @@ GPTChat 和模块级 token global 已移除：
 """
 
 from dataclasses import dataclass
-from typing import Protocol, Literal, Optional, List
+from typing import Protocol, Literal, Optional, List, Union
 from abc import ABC, abstractmethod
 
 
@@ -21,9 +21,19 @@ from abc import ABC, abstractmethod
 
 @dataclass(frozen=True)
 class Message:
-    """单条对话消息，全库通用。"""
+    """
+    单条对话消息，全库通用。
+
+    content 类型：
+      str  : 纯文本消息（绝大多数情况）
+      list : 多模态消息，格式为 Responses API content blocks，如：
+             [
+               {"type": "input_text",  "text": "..."},
+               {"type": "input_image", "image_url": {"url": "data:image/jpeg;base64,..."}}
+             ]
+    """
     role:    Literal["system", "user", "assistant"]
-    content: str
+    content: Union[str, list]
 
 
 # ── LLMCallable Protocol ──────────────────────────────────────────────────────
