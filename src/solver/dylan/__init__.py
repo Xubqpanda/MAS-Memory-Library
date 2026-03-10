@@ -1,4 +1,4 @@
-# src/mas/dylan/__init__.py
+# src/solver/dylan/__init__.py
 from .dylan import DyLAN
 
 __all__ = [

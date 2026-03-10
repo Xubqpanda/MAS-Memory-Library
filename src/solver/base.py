@@ -1,8 +1,8 @@
-# src/mas/base.py
+# src/solver/base.py
 """
-MAS 层核心抽象。
+Solver 层核心抽象。
 
-MetaMAS：所有 MAS 框架的统一接口，只暴露 build_system 和 run_task 两个方法。
+MetaSolver：所有 Solver 框架的统一接口，只暴露 build_system 和 run_task 两个方法。
 Agent  ：单个 agent 的通用封装。
 """
 from abc import ABC, abstractmethod
@@ -11,7 +11,7 @@ from typing import Optional, Dict, Iterable
 
 from src.llm import Message
 from src.reasoning import ReasoningBase, ReasoningConfig
-from src.memory.base import MASMemoryBase
+from src.memory.base import SolverMemoryBase
 from src.envs.base import Env  # 迁移至 src/envs，此处 re-export
 
 
@@ -50,12 +50,12 @@ class Agent:
         return self.reasoning(messages, reason_config)
 
 
-# ─── MetaMAS ──────────────────────────────────────────────────────────────────
+# ─── MetaSolver ──────────────────────────────────────────────────────────────────
 
 @dataclass
-class MetaMAS(ABC):
+class MetaSolver(ABC):
     """
-    所有 MAS 框架的统一抽象基类。
+    所有 Solver 框架的统一抽象基类。
 
     核心契约：
       - build_system：注入 reasoning、memory、env 和框架超参，完成框架内部初始化。
@@ -65,14 +65,14 @@ class MetaMAS(ABC):
     """
     agents_team: Dict[str, Agent] = field(default_factory=dict)
     env: Optional[Env] = None
-    meta_memory: Optional[MASMemoryBase] = None
+    meta_memory: Optional[SolverMemoryBase] = None
 
     def hire(self, agents: Iterable[Agent]) -> None:
         for agent in agents:
             if agent.name not in self.agents_team:
                 self.agents_team[agent.name] = agent
             else:
-                print(f"[MetaMAS] Agent '{agent.name}' already in team, skipped.")
+                print(f"[MetaSolver] Agent '{agent.name}' already in team, skipped.")
 
     def set_env(self, env: Env) -> None:
         self.env = env
@@ -84,7 +84,7 @@ class MetaMAS(ABC):
     def build_system(
         self,
         reasoning: ReasoningBase,
-        memory: MASMemoryBase,
+        memory: SolverMemoryBase,
         env: Env,
         config: dict,
     ) -> None:

@@ -1,5 +1,5 @@
 # src/memory/__init__.py
-from .base import MASMemoryBase
+from .base import MemoryBase
 from .methods import (
     EmptyMemory,
     GenerativeMASMemory,
@@ -11,7 +11,7 @@ from .methods import (
 )
 
 __all__ = [
-    "MASMemoryBase",
+    "MemoryBase",
     "EmptyMemory",
     "GenerativeMASMemory",
     "VoyagerMASMemory",

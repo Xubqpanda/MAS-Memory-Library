@@ -1,4 +1,4 @@
-# src/mas/dylan/dylan_prompt.py
+# src/solver/dylan/dylan_prompt.py
 VALID_ROLES: list[str] = ['solver', 'ground_truth', 'decision']
 
 solver_system_prompt: str = """You are a smart agent designed to solve problems. 

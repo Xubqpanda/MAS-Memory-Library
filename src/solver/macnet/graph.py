@@ -1,4 +1,4 @@
-# src/mas/macnet/graph.py
+# src/solver/macnet/graph.py
 import random
 from typing import Literal
 from dataclasses import dataclass

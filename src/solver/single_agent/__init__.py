@@ -1,4 +1,4 @@
-# src/mas/single_agent/__init__.py
+# src/solver/single_agent/__init__.py
 from .single_agent import SingleAgentSolver
 
 __all__ = [

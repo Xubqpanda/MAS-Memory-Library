@@ -1,4 +1,4 @@
-# src/mas/macnet/graph_mas.py
+# src/solver/macnet/graph_mas.py
 from dataclasses import dataclass
 import numpy as np
 from collections import deque

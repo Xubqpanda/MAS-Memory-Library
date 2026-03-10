@@ -1,10 +1,10 @@
-# src/mas/macnet/node.py
+# src/solver/macnet/node.py
 from __future__ import annotations
 from typing import List, Tuple, Dict
 
-from mas.agents import Agent
-from mas.llm import Message
-from mas.reasoning import ReasoningConfig
+from solver.agents import Agent
+from solver.llm import Message
+from solver.reasoning import ReasoningConfig
 
 class Node:
 

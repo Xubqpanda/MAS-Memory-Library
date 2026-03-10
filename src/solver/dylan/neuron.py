@@ -1,4 +1,4 @@
-# src/mas/dylan/neuron.py
+# src/solver/dylan/neuron.py
 import numpy as np
 
 from mas.agents import Agent

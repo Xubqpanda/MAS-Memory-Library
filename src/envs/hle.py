@@ -4,10 +4,14 @@ HLEEnv：HLE 数据集的 Env 实现。
 
 单轮 QA 环境，step() 内部调用 LLM judge 完成评分。
 max_trials = 1，所有 MAS 框架的主循环只跑一次。
+
+judge_caller 必须以 role="env" 初始化，token 消耗会统计到 env 桶：
+    judge_caller = ModelCaller(model="gpt-4o", role="env")
+    env = HLEEnv(judge_caller=judge_caller)
 """
 
-from src.envs.base import Env
-from src.model_caller import ModelCaller
+from src.envs.base    import Env
+from src.llm          import ModelCaller
 
 JUDGE_PROMPT = """Judge whether the following [response] to [question] is correct or not based on the precise and unambiguous [correct_answer] below.
 
@@ -33,7 +37,7 @@ class HLEEnv(Env):
     HLE 单轮 QA 环境。
 
     Attributes:
-        judge_caller : ModelCaller，用于调用 judge LLM。
+        judge_caller : ModelCaller，role 必须为 "env"，用于调用 judge LLM。
         verbose      : 是否打印 judge 输出，调试用。
 
     max_trials = 1：所有 MAS 框架主循环只跑一次。
@@ -45,8 +49,17 @@ class HLEEnv(Env):
 
     def __init__(self, judge_caller: ModelCaller, verbose: bool = False):
         super().__init__()
+
+        # role 断言：确保 token 统计进入正确的桶
+        if judge_caller.role != "env":
+            raise ValueError(
+                f"HLEEnv 的 judge_caller 必须以 role='env' 初始化，"
+                f"当前 role='{judge_caller.role}'。\n"
+                f"请用 ModelCaller(model=..., role='env') 创建。"
+            )
+
         self.judge_caller = judge_caller
-        self.verbose = verbose
+        self.verbose      = verbose
 
         self._question:       str   = ""
         self._correct_answer: str   = ""
@@ -81,7 +94,7 @@ class HLEEnv(Env):
         )
 
         response = self.judge_caller.call(prompt=prompt)
-        content: str = response['content']
+        content: str = response["content"]
 
         if self.verbose:
             print("\n" + "=" * 60)

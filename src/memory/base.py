@@ -1,6 +1,6 @@
 # src/memory/base.py
 """
-MASMemoryBase：所有 memory 方法的统一抽象基类。
+MemoryBase：所有 memory 方法的统一抽象基类。
 
 两层记忆模型
 ────────────
@@ -50,9 +50,9 @@ WorkingMemoryContent = Union[AgentMessage, tuple[str, str]]
 
 
 @dataclass
-class MASMemoryBase(StorageNameSpace, ABC):
+class MemoryBase(StorageNameSpace, ABC):
     """
-    MAS Memory 抽象基类。
+    Memory 抽象基类。
 
     Attributes:
         llm_model      : 用于生成摘要、洞见等的 LLM 调用接口。

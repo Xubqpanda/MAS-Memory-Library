@@ -1,4 +1,4 @@
-# src/mas/autogen/autogen.py
+# src/solver/autogen/autogen.py
 from dataclasses import dataclass
 
 from mas.agents import Agent

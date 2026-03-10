@@ -1,13 +1,13 @@
 # src/registry/registry.py
 from typing import Type
 
-from src.mas.base import MetaMAS
-from src.mas.autogen import AutoGen
-from src.mas.macnet import MacNet
-from src.mas.dylan import DyLAN
-from src.mas.reasoning import ReasoningBase, ReasoningIO
+from src.solver.base import MetaSolver
+from src.solver.autogen import AutoGen
+from src.solver.macnet import MacNet
+from src.solver.dylan import DyLAN
+from src.solver.reasoning import ReasoningBase, ReasoningIO
 
-from src.memory.base import MASMemoryBase
+from src.memory.base import SolverMemoryBase
 from src.memory.methods import (
     EmptyMemory,
     GenerativeMASMemory,
@@ -21,7 +21,7 @@ from src.memory.methods import (
 
 # ─── MAS  ────────────────────────────────────────────────────────────
 
-MAS_REGISTRY: dict[str, Type[MetaMAS]] = {
+MAS_REGISTRY: dict[str, Type[MetaSolver]] = {
     "autogen": AutoGen,
     "macnet": MacNet,
     "dylan": DyLAN,
@@ -29,7 +29,7 @@ MAS_REGISTRY: dict[str, Type[MetaMAS]] = {
 
 # ─── Memory ─────────────────────────────────────────────────────────
 
-MEMORY_REGISTRY: dict[str, Type[MASMemoryBase]] = {
+MEMORY_REGISTRY: dict[str, Type[SolverMemoryBase]] = {
     "empty": EmptyMemory,
     "generative": GenerativeMASMemory,
     "voyager": VoyagerMASMemory,
@@ -48,13 +48,13 @@ REASONING_REGISTRY: dict[str, Type[ReasoningBase]] = {
 
 # ─── get functions ──────────────────────────────────────────────────────────────────
 
-def get_mas_cls(name: str) -> Type[MetaMAS]:
+def get_mas_cls(name: str) -> Type[MetaSolver]:
     if name not in MAS_REGISTRY:
         raise ValueError(f"Unknown MAS framework '{name}'. Available: {list(MAS_REGISTRY)}")
     return MAS_REGISTRY[name]
 
 
-def get_memory_cls(name: str) -> Type[MASMemoryBase]:
+def get_memory_cls(name: str) -> Type[SolverMemoryBase]:
     if name not in MEMORY_REGISTRY:
         raise ValueError(f"Unknown memory method '{name}'. Available: {list(MEMORY_REGISTRY)}")
     return MEMORY_REGISTRY[name]

@@ -1,4 +1,4 @@
-# src/mas/macnet/graph_prompt.py
+# src/solver/macnet/graph_prompt.py
 critic_system_prompt: str = """You are a judge. Given a task and an agent's output for that task, your job is to evaluate the agent's output and give your suggestion.
 NOTE: 
 - If you believe the agent's answer is correct, simply output `Support`.

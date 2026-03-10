@@ -1,4 +1,4 @@
-# src/mas/autogen/autogen_prompt.py
+# src/solver/autogen/autogen_prompt.py
 from dataclasses import dataclass
 
 solver_system_prompt: str = """

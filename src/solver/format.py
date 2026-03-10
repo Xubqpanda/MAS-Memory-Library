@@ -1,4 +1,4 @@
-# src/mas/format.py
+# src/solver/format.py
 task_solve_with_insights = """
 ## Successful Examples (Reference Cases)
 Below are some examples of similar tasks that were successfully completed.  
