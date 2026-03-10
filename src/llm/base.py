@@ -1,106 +1,55 @@
 # src/llm/base.py
-import os
-from typing import Protocol, Literal, Optional, List
+"""
+LLM 层基础定义。
+
+只保留三件事：
+  Message      — 全库通用的消息数据结构
+  LLMCallable  — 鸭子类型 Protocol，供类型注解使用
+  LLMBase      — 抽象基类，具体实现见 model_caller.py
+
+GPTChat 和模块级 token global 已移除：
+  - GPTChat 被 ModelCaller 统一替代（src/llm/model_caller.py）
+  - token 统计由 TokenTracker 接管（src/llm/token_tracker.py）
+"""
+
 from dataclasses import dataclass
+from typing import Protocol, Literal, Optional, List
 from abc import ABC, abstractmethod
 
-from openai import OpenAI
 
-
-# ─── Message ──────────────────────────────────────────────────────────────────
+# ── Message ───────────────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)
 class Message:
-    role: Literal["system", "user", "assistant"]
+    """单条对话消息，全库通用。"""
+    role:    Literal["system", "user", "assistant"]
     content: str
 
 
-# ─── LLM Protocol ─────────────────────────────────────
+# ── LLMCallable Protocol ──────────────────────────────────────────────────────
 
 class LLMCallable(Protocol):
-    def __call__(
-        self,
-        messages: List[Message],
-        temperature: float = 0.1,
-        max_tokens: int = 512,
-        stop_strs: Optional[List[str]] = None,
-        num_comps: int = 1,
-    ) -> str: ...
+    """
+    鸭子类型 Protocol，任何实现了此签名的 callable 都满足接口。
+    供 ReasoningBase、MASMemoryBase 等的类型注解使用。
+    """
+    def __call__(self, messages: List[Message]) -> str: ...
 
 
-# ─── Abstract BASE ──────────────────────────────────────────────────────────────────
+# ── LLMBase ABC ───────────────────────────────────────────────────────────────
 
 class LLMBase(ABC):
+    """
+    LLM 实现的抽象基类。
+
+    子类只需实现 __call__，接收 Message 列表，返回模型的文本输出。
+    temperature、max_tokens 等推理超参由子类在初始化时或 call 内部处理，
+    不暴露在基类接口上——这样 ReasoningConfig 的超参可以在 ModelCaller
+    层面统一管理，而不是散落在每个子类的签名里。
+    """
+
     def __init__(self, model_name: str):
         self.model_name = model_name
 
     @abstractmethod
-    def __call__(
-        self,
-        messages: List[Message],
-        temperature: float = 0.1,
-        max_tokens: int = 512,
-        stop_strs: Optional[List[str]] = None,
-        num_comps: int = 1,
-    ) -> str: ...
-
-
-# ─── Token consumption ─────────────────────────────────────────
-
-_completion_tokens: int = 0
-_prompt_tokens: int = 0
-_total_tokens: int = 0
-
-def get_token_usage() -> tuple[int, int, float]:
-    """Return (completion_tokens, prompt_tokens, total_tokens).""" 
-    return _completion_tokens, _prompt_tokens, _completion_tokens + _prompt_tokens
-
-def reset_token_usage() -> None:
-    global _completion_tokens, _prompt_tokens, _total_tokens
-    _completion_tokens = 0
-    _prompt_tokens = 0
-    _total_tokens = 0
-
-
-# ─── GPTChat ─────────────────────────────────────────
-
-class GPTChat(LLMBase):
-
-    def __init__(self, model_name: str, base_url: str = None, api_key: str = None):
-        super().__init__(model_name)
-        self.client = OpenAI(
-            base_url=base_url or os.environ["OPENAI_API_BASE"],
-            api_key=api_key or os.environ["OPENAI_API_KEY"],
-        )
-
-    def __call__(
-        self,
-        messages: List[Message],
-    ) -> str:
-        import time
-        global _prompt_tokens, _completion_tokens, _total_tokens
-
-        formatted = [{"role": m.role, "content": m.content} for m in messages]
-        max_retries, wait_time = 5, 1
-
-        for _ in range(max_retries):
-            try:
-                response = self.client.chat.completions.create(
-                    model=self.model_name,
-                    messages=formatted,
-                )
-                answer = response.choices[0].message.content
-                _prompt_tokens += response.usage.prompt_tokens
-                _completion_tokens += response.usage.completion_tokens
-                _total_tokens += response.usage.prompt_tokens + response.usage.completion_tokens
-                if answer is None:
-                    continue
-                return answer
-            except Exception as e:
-                err = str(e)
-                if "rate limit" in err.lower() or "429" in err:
-                    time.sleep(wait_time)
-                else:
-                    print(f"[LLM] API error: {err}")
-                    break
-        return ""
+    def __call__(self, messages: List[Message]) -> str: ...

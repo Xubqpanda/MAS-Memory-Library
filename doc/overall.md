@@ -14,12 +14,15 @@
 │   ├── scripts/                                 # 跑各个基准数据集的脚本
 |   |   └── run_FrontierScience.sh               # 运行 FrontierScience 基准的脚本
 │   ├── benchmarks /                             # 评测基准数据集, 包含数据加载和预处理的代码
-│   |   ├── ALFWorld/                            # ALFWorld 基准   
-│   |   ├── Fever/                               # Fever 基准   
-│   |   ├── FrontierScience/                     # FrontierScience 基准   
-│   |   ├── HLE/                                 # HLE 基准 
-|   |   |   └── data/                            # HLE 基准的数据文件
-│   |   └── PDDL/                                # PDDL 基准
+|   │   |   ├── ALFWorld/                        # ALFWorld 基准   
+|   │   |   ├── Fever/                           # Fever 基准   
+|   │   |   ├── FrontierScience/                 # FrontierScience 基准   
+|   |   |   |   ├── data/                        # FrontierScience 基准的数据文件
+|   |   |   |   └── runner.py                    # FrontierScience 基准的运行脚本，包含数据加载和预处理的代码 
+|   │   |   ├── HLE/                             # HLE 基准 
+|   |   |   |   ├── data/                        # HLE 基准的数据文件
+|   |   |   |   └── runner.py                    # HLE 基准的运行脚本，包含数据加载和预处理的代码 
+|   │   |   └── PDDL/                            # PDDL 基准
 │   └── run_experiment.py                        # 统一的实验运行入口，支持不同配置的实验  
 ├── src/                                         # 核心代码库
 │   ├── common/                                  # 跨层共享的数据结构
@@ -34,8 +37,10 @@
 │   │   ├── hle.py                               # hle 任务环境配置
 │   │   └── pddl.py                              # pddl 任务环境配置
 │   ├── llm/                                     # LLM 相关的接口和实现
+│   │   ├── __init__.py                          # llm 模块的初始化
 │   │   ├── base.py                              # LLMBase 抽象类
-│   │   └── openai.py                            # OpenAI LLM 实现
+│   │   ├── model_caller.py                      # ModelCaller 实现
+│   │   └── token_tracker.py                     # TokenTracker 实现
 │   ├── mas/                                     # 多智能体系统相关的接口和实现
 │   │   ├── autogen/                             # AutoGenMAS(MetaMAS)
 │   │   │   ├── __init__.py                      # AutoGenMAS 模块的初始化
