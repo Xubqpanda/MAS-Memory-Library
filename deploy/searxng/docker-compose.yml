@@ -1,0 +1,16 @@
+# deploy/searxng/docker-compose.yml
+services:
+  searxng:
+    image: ghcr.io/searxng/searxng:latest
+    container_name: ael-searxng
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - BASE_URL=http://127.0.0.1:8080/
+      - INSTANCE_NAME=Agent-Evolving-Library SearXNG
+      - HTTP_PROXY=${SEARXNG_HTTP_PROXY:-http://127.0.0.1:1080}
+      - HTTPS_PROXY=${SEARXNG_HTTPS_PROXY:-http://127.0.0.1:1080}
+      - ALL_PROXY=${SEARXNG_ALL_PROXY:-http://127.0.0.1:1080}
+      - NO_PROXY=${SEARXNG_NO_PROXY:-127.0.0.1,localhost}
+    volumes:
+      - ./settings.yml:/etc/searxng/settings.yml:ro

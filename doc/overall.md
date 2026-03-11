@@ -1,5 +1,9 @@
-MAS-Memory-Library:
+Agent-Evolving-Library:
 ├── assets/                                      # 相关资源，如图示等
+├── deploy/                                      # 部署和配置文件
+│   └── searxng/                                 # SearXNG 部署配置
+|       ├── docker-compose.yml                   # SearXNG 的 Docker Compose 配置
+|       └── settings.yml                         # SearXNG 的配置文件
 ├── docs/                                        # 文档和设计说明
 ├── experiments/                                 # 实验脚本和配置
 │   ├── configs/                                 # 配置文件

@@ -1,11 +1,12 @@
 tool_config:
-  enable_tools: false
-  web_search_provider: serper
-  web_access_provider: jina
-  max_tool_steps: 4
+  enable_tools: true
+  web_search_provider: searxng
+  searxng_base_url: http://127.0.0.1:8080
+  web_access_provider: crawl4ai
+  max_tool_steps: 10
   require_final_answer: true
 
 mas_config:
-  enable_tools: false
-  max_tool_steps: 4
+  enable_tools: true
+  max_tool_steps: 10
   require_final_answer: true

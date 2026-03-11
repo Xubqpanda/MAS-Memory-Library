@@ -202,7 +202,7 @@ def load_runner(benchmark_name: str):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="MAS-Memory-Library experiment runner",
+        description="Agent-Evolving-Library experiment runner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )

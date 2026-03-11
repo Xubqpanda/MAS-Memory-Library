@@ -1,0 +1,23 @@
+# deploy/searxng/settings.yml
+use_default_settings: true
+
+general:
+  instance_name: "Agent-Evolving-Library SearXNG"
+
+server:
+  secret_key: "change-this-to-a-random-string"
+  limiter: false
+  image_proxy: false
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json
+    - csv
+    - rss
+
+outgoing:
+  # Explicit proxy routing for SearXNG engine requests.
+  proxies:
+    all://: http://127.0.0.1:1080

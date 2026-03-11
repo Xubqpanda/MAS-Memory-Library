@@ -227,7 +227,10 @@ class WebSearchTool(Tool):
     description = "Search web using provider (serper/searxng/google)."
 
     def run(self, query: str, provider: str | None = None) -> str:
-        results, err = web_search_dispatch(query=query, provider=provider, serp_num=5)
+        locked_provider = os.getenv("WEB_SEARCH_PROVIDER")
+        allow_override = os.getenv("WEB_SEARCH_ALLOW_OVERRIDE", "false").lower() == "true"
+        selected_provider = provider if (allow_override and provider) else locked_provider
+        results, err = web_search_dispatch(query=query, provider=selected_provider, serp_num=5)
         if err:
             return err
         if not results:

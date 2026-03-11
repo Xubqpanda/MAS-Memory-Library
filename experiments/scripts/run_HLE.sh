@@ -7,9 +7,12 @@
 #
 #   # 调试（只跑 10 道题，输出详细日志）
 #   nohup bash run_HLE.sh --debug > 2026_3_10_test_hle_noagent_emptymemory.log 2>&1 &
+#
+#   # 切换搜索与网页读取 provider
+#   nohup bash run_HLE.sh --search-provider searxng --access-provider crawl4ai > run_hle.log 2>&1 &
 
 set -euo pipefail
-unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY
 
 # ── API 配置 ──────────────────────────────────────────────────────────────────
 export OPENAI_API_KEY=""
@@ -19,14 +22,41 @@ export OPENAI_API_BASE=""
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-BENCHMARK_CFG="$REPO_ROOT/experiments/configs/benchmarks/hle.yaml"
-METHOD_CFG="$REPO_ROOT/experiments/configs/methods/single_agent_emptymemory.yaml"
+ENV_CFG="$REPO_ROOT/experiments/configs/envs/hle.yaml"
+SOLVER_CFG="$REPO_ROOT/experiments/configs/solver/single_agent.yaml"
+TOOL_CFG="$REPO_ROOT/experiments/configs/tool/default.yaml"
+MEMORY_CFG="$REPO_ROOT/experiments/configs/memory/empty.yaml"
 
 # ── 参数解析 ──────────────────────────────────────────────────────────────────
 DEBUG=false
-for arg in "$@"; do
-    case $arg in
-        --debug) DEBUG=true ;;
+SEARCH_PROVIDER=""
+ACCESS_PROVIDER=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --debug)
+            DEBUG=true
+            shift
+            ;;
+        --search-provider=*)
+            SEARCH_PROVIDER="${1#*=}"
+            shift
+            ;;
+        --access-provider=*)
+            ACCESS_PROVIDER="${1#*=}"
+            shift
+            ;;
+        --search-provider)
+            SEARCH_PROVIDER="${2:-}"
+            shift 2
+            ;;
+        --access-provider)
+            ACCESS_PROVIDER="${2:-}"
+            shift 2
+            ;;
+        *)
+            echo "[run_HLE] Unknown arg: $1"
+            exit 1
+            ;;
     esac
 done
 
@@ -35,15 +65,28 @@ cd "$REPO_ROOT"
 
 if [ "$DEBUG" = true ]; then
     echo "[run_HLE] DEBUG mode: limit=10, verbose=true"
-    python experiments/run_experiment.py \
-        --benchmark "$BENCHMARK_CFG" \
-        --method    "$METHOD_CFG" \
-        --override  evaluation.limit=10 output.verbose=true \
-                    model.base_url=https://gmn.chuangzuoli.com 
+    OVERRIDES=(
+        "evaluation.limit=10"
+        "output.verbose=true"
+        "model.base_url=https://gmn.chuangzuoli.com"
+    )
 else
     echo "[run_HLE] Full run"
-    python experiments/run_experiment.py \
-        --benchmark "$BENCHMARK_CFG" \
-        --method    "$METHOD_CFG" \
-        --override  model.base_url=https://gmn.chuangzuoli.com 
+    OVERRIDES=("model.base_url=https://gmn.chuangzuoli.com")
 fi
+
+if [ -n "$SEARCH_PROVIDER" ]; then
+    OVERRIDES+=("tool_config.web_search_provider=$SEARCH_PROVIDER")
+    echo "[run_HLE] web_search_provider=$SEARCH_PROVIDER"
+fi
+if [ -n "$ACCESS_PROVIDER" ]; then
+    OVERRIDES+=("tool_config.web_access_provider=$ACCESS_PROVIDER")
+    echo "[run_HLE] web_access_provider=$ACCESS_PROVIDER"
+fi
+
+python experiments/run_experiment.py \
+    --env    "$ENV_CFG" \
+    --solver "$SOLVER_CFG" \
+    --tool   "$TOOL_CFG" \
+    --memory "$MEMORY_CFG" \
+    --override "${OVERRIDES[@]}"
