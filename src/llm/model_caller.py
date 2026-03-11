@@ -30,7 +30,7 @@ litellm.drop_params = True
 
 logger = logging.getLogger("emams")
 
-RoleType = Literal["solver", "memory", "env"]
+RoleType = Literal["solver", "memory", "env", "tool"]
 
 
 class ModelCaller(LLMBase):
@@ -39,7 +39,7 @@ class ModelCaller(LLMBase):
 
     Args:
         model            : 模型名，如 "gpt-5.3" / "gpt-4o" / "claude-3-5-sonnet-20241022"。
-        role             : 调用方身份（"solver" / "memory" / "env"），用于 TokenTracker 分桶。
+        role             : 调用方身份（"solver" / "memory" / "env" / "tool"），用于 TokenTracker 分桶。
         temperature      : 默认采样温度。
         max_tokens       : 默认最大输出 token 数。
         reasoning_effort : 推理模型专用，"low" / "medium" / "high"。

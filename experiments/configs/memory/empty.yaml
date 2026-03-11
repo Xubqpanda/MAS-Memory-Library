@@ -1,0 +1,6 @@
+experiment:
+  memory_method: empty
+
+memory_config:
+  namespace: hle_empty
+  working_dir: experiments/results/memory_store

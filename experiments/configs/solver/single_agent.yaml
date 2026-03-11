@@ -1,0 +1,7 @@
+experiment:
+  agent_framework: single_agent
+
+model:
+  solver: gpt-5.2
+
+mas_config: {}

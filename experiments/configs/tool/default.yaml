@@ -1,0 +1,11 @@
+tool_config:
+  enable_tools: false
+  web_search_provider: serper
+  web_access_provider: jina
+  max_tool_steps: 4
+  require_final_answer: true
+
+mas_config:
+  enable_tools: false
+  max_tool_steps: 4
+  require_final_answer: true

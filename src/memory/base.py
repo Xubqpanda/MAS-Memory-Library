@@ -121,6 +121,10 @@ class MemoryBase(StorageNameSpace, ABC):
             content      = (action, observation)
             upstream_ids 忽略
             **kwargs     透传给 StateChain（如 reward=0.5）
+                         推荐携带 event_type 区分来源：
+                           - event_type="env"   : 环境反馈
+                           - event_type="tool"  : 工具调用轨迹
+                           - event_type="system": 系统提示/约束提示
             返回值：None
         """
         if isinstance(content, AgentMessage):
@@ -129,6 +133,7 @@ class MemoryBase(StorageNameSpace, ABC):
             )
         elif isinstance(content, tuple) and len(content) == 2:
             action, observation = content
+            kwargs.setdefault("event_type", "env")
             self.current_task_context.move_state(action, observation, **kwargs)
             return None
         else:

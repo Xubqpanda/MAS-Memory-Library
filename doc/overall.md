@@ -40,6 +40,12 @@ MAS-Memory-Library:
 │   │   ├── llm_io_logger.py                     # LLM I/O 日志记录器
 │   │   ├── model_caller.py                      # ModelCaller 实现
 │   │   └── token_tracker.py                     # TokenTracker 实现
+│   ├── tools/                                   # Tool 相关的接口和实现（deep-research）
+│   │   ├── __init__.py                          # tools 模块导出与默认工具集合
+│   │   ├── base.py                              # Tool、ToolCall、ToolExecutor
+│   │   ├── search_tools.py                      # web_search/read_page/wiki_search
+│   │   ├── mm_tools.py                          # inspect_file_as_text/image/audio 等
+│   │   └── tool_exec_logger.py                  # tool 调用执行日志（tool_exec.jsonl/log）
 │   ├── solver/                                  # 智能体系统相关的接口和实现
 │   │   ├── autogen/                             # AutoGenMAS(MetaSolver)
 │   │   │   ├── __init__.py                      # AutoGenMAS 模块的初始化

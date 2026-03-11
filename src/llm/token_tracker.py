@@ -6,6 +6,7 @@ TokenTracker：按 role 分桶统计全局 token 消耗。
   solver  — MAS 框架调用 LLM 解题（working space）
   memory  — Memory 方法内部的 LLM 调用（摘要、insight 提取、skill 生成等）
   env     — 环境侧的 judge 调用
+  tool    — Tool 内部的 LLM 调用（如网页摘要、图像理解等）
 
 设计原则：
   - 单例（模块级 `token_tracker`），全库共享同一个实例。
@@ -20,7 +21,7 @@ from typing import Dict
 
 
 # 预设 role，文档用，实际不做强制校验
-ROLES = ("solver", "memory", "env")
+ROLES = ("solver", "memory", "env", "tool")
 
 
 class TokenTracker:

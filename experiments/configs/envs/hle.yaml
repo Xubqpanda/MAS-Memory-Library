@@ -1,0 +1,16 @@
+benchmark:
+  name: HLE
+  data_path: experiments/benchmarks/HLE/data/hle.json
+
+model:
+  judge: gpt-5.2
+
+evaluation:
+  category: null
+  text_only: true
+  limit: null
+  max_workers: 1
+
+output:
+  dir: experiments/results
+  verbose: false

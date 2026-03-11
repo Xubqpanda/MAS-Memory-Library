@@ -40,6 +40,7 @@ cfg 关键字段（benchmark yaml + method yaml 合并后）：
 import base64
 import json
 import logging
+import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -55,6 +56,7 @@ from src.reasoning                   import ReasoningIO
 from src.llm.model_caller            import ModelCaller
 from src.llm.token_tracker           import token_tracker
 from src.llm.llm_io_logger           import llm_io_logger
+from src.tools.tool_exec_logger      import tool_exec_logger
 
 logger = logging.getLogger("emams")
 
@@ -339,15 +341,25 @@ def run(cfg: dict, logger: logging.Logger) -> None:
     exp_cfg   = cfg["experiment"]
     mem_cfg   = cfg.get("memory_config", {})
     mas_cfg   = cfg.get("mas_config", {})
+    tool_cfg  = cfg.get("tool_config", {})
 
     # 自定义 API 端点配置（两个 caller 共用同一套端点）
     base_url   = model_cfg.get("base_url")
     api_format = model_cfg.get("api_format", "chat")
 
+    # Tool provider config -> env vars
+    if "web_search_provider" in tool_cfg:
+        os.environ["WEB_SEARCH_PROVIDER"] = str(tool_cfg["web_search_provider"])
+    if "web_access_provider" in tool_cfg:
+        os.environ["WEB_ACCESS_PROVIDER"] = str(tool_cfg["web_access_provider"])
+    if "searxng_base_url" in tool_cfg:
+        os.environ["SEARXNG_BASE_URL"] = str(tool_cfg["searxng_base_url"])
+
     output_dir = REPO_ROOT / out_cfg["dir"] / cfg["benchmark"]["name"] / exp_cfg["name"]
     ts_dir = output_dir / f"hle_{time.strftime('%Y-%m-%d_%H-%M-%S')}"
     ts_dir.mkdir(parents=True, exist_ok=True)
     llm_io_logger.setup(log_dir=str(ts_dir / "llm_io"))
+    tool_exec_logger.setup(log_dir=str(ts_dir / "tool_exec"))
     # ── 数据集 ────────────────────────────────────────────────────────────────
     data_path = REPO_ROOT / cfg["benchmark"]["data_path"]
     if not data_path.exists():
@@ -387,7 +399,12 @@ def run(cfg: dict, logger: logging.Logger) -> None:
         embedding_func=None,
     )
 
-    solver = SingleAgentSolver()
+    framework = exp_cfg.get("agent_framework", "single_agent")
+    if framework == "single_agent":
+        solver = SingleAgentSolver()
+    else:
+        logger.error(f"Unknown agent framework: {framework}")
+        sys.exit(1)
     solver.build_system(reasoning=reasoning, solver_memory=memory, env=env, config=mas_cfg)
 
     # ── 评测 ──────────────────────────────────────────────────────────────────

@@ -53,6 +53,7 @@ _ROLE_COLOR = {
     "solver": "\033[36m",   # cyan
     "memory": "\033[35m",   # magenta
     "env":    "\033[33m",   # yellow
+    "tool":   "\033[32m",   # green
 }
 _RESET = "\033[0m"
 _DIVIDER = "─" * 72
@@ -100,7 +101,7 @@ class LLMIOLogger:
             self._call_index = 0
             self._enabled    = True
             # 预先创建三个标准 role 的 JSONL 句柄
-            for role in ("solver", "memory", "env"):
+            for role in ("solver", "memory", "env", "tool"):
                 self._get_or_create_jsonl(role)
             # 统一的人类可读 log
             self._readable_fh = open(self._log_dir / "llm_io.log", "a", encoding="utf-8")

@@ -25,6 +25,7 @@ SingleAgentSolver：单 agent solver baseline。
   - 检索超参（topk、threshold 等）属于各 memory 方法的内部配置，solver 不传递。
 """
 
+import json
 from typing import Optional
 from dataclasses import dataclass
 
@@ -34,6 +35,9 @@ from src.reasoning      import ReasoningBase, ReasoningConfig
 from src.memory.base    import MemoryBase
 from src.common.message import AgentMessage
 from src.llm            import Message, token_tracker
+from src.tools          import ToolExecutor, build_default_tools
+
+FINAL_ANSWER_TOOL_NAME = "final_answer"
 
 SINGLE_AGENT_SYSTEM_PROMPT = (
     "Your response should be in the following format:\n"
@@ -63,8 +67,12 @@ class SingleAgentSolver(MetaSolver):
         """
         注入推理模块、memory、环境，完成初始化。
 
-        config 目前只支持一个字段：
-          system_prompt (str) : 覆盖默认 system prompt（可选）
+        config 字段：
+          system_prompt            (str)  : 覆盖默认 system prompt（可选）
+          enable_tools             (bool) : 是否启用内置 tool runtime（默认 False）
+          max_tool_steps           (int)  : 单次任务内工具调用最大轮次（默认 4）
+          max_working_memory_chars (int)  : 可选字符预算，超出后截断（默认不限）
+          require_final_answer     (bool) : 工具模式下是否要求显式 final_answer（默认 True）
         """
         if not isinstance(reasoning, ReasoningBase):
             raise TypeError("reasoning must be an instance of ReasoningBase")
@@ -77,6 +85,12 @@ class SingleAgentSolver(MetaSolver):
         self._reasoning          = reasoning
         self.meta_memory         = solver_memory
         self.set_env(env)
+        self._tool_executor: Optional[ToolExecutor] = None
+        self._max_tool_steps: int = int(config.get("max_tool_steps", 10))
+        self._max_working_memory_chars: Optional[int] = config.get("max_working_memory_chars")
+        self._require_final_answer: bool = bool(config.get("require_final_answer", True))
+        if bool(config.get("enable_tools", False)):
+            self._tool_executor = ToolExecutor(build_default_tools())
 
     # ── run_task ──────────────────────────────────────────────────────────────
 
@@ -119,44 +133,32 @@ class SingleAgentSolver(MetaSolver):
 
         # ── 主循环 ─────────────────────────────────────────────────────────
         for i in range(max_trials):
-
-            # memory 决定返回什么 prompt（EmptyMemory 只返回题目，其他可能含经验）
-            user_prompt: str = self.meta_memory.retrieve_working_memory()
-            self.notify_observers(user_prompt)
-
-            # 构造 messages：多模态时 user content 变为 list
-            if image_b64:
-                user_content = [
-                    {"type": "input_text",  "text": user_prompt},
-                    {"type": "input_image", "image_url": {
-                        "url": f"data:{image_media_type};base64,{image_b64}"
-                    }},
-                ]
+            if self._tool_executor:
+                answer, prompt_snapshot = self._reason_with_tools(
+                    image_b64=image_b64,
+                    image_media_type=image_media_type,
+                )
             else:
-                user_content = user_prompt
-
-            messages = [
-                Message("system", self._system_prompt),
-                Message("user",   user_content),
-            ]
-
-            answer: str = self._reasoning(messages, self.reasoning_config)
+                answer, prompt_snapshot = self._reason_without_tools(
+                    image_b64=image_b64,
+                    image_media_type=image_media_type,
+                )
+                self.meta_memory.add_working_memory(
+                    AgentMessage(
+                        agent_name="solver",
+                        user_instruction=prompt_snapshot,
+                        message=answer,
+                    ),
+                    upstream_ids=[],
+                )
             self.notify_observers(f"Step {i+1} Answer: {answer}")
-
-            self.meta_memory.add_working_memory(
-                AgentMessage(
-                    agent_name="solver",
-                    user_instruction=user_prompt,
-                    message=answer,
-                ),
-                upstream_ids=[],
-            )
 
             observation, reward, done = env.step(answer)
             self.notify_observers(f"Act {i+1}: {answer}\nObs {i+1}: {observation}")
 
             self.meta_memory.add_working_memory(
                 (answer, observation),
+                event_type="env",
                 reward=reward,
             )
 
@@ -169,7 +171,7 @@ class SingleAgentSolver(MetaSolver):
         self.meta_memory.add_experiential_memory(
             label=final_done,
             feedback=final_feedback,
-        )
+        ) 
 
         # ── Token 快照 ────────────────────────────────────────────────────
         t = token_tracker.summary()
@@ -178,10 +180,144 @@ class SingleAgentSolver(MetaSolver):
             f"solver: {t['solver']['total']}  "
             f"env: {t['env']['total']}  "
             f"memory: {t['memory']['total']}  "
+            f"tool: {t.get('tool', {}).get('total', 0)}  "
             f"total: {t['total']['total']}"
         )
 
         return final_reward, final_done
+
+    def _reason_without_tools(
+        self,
+        image_b64: Optional[str] = None,
+        image_media_type: str = "image/jpeg",
+    ) -> tuple[str, str]:
+        user_prompt: str = self._retrieve_working_prompt()
+        self.notify_observers(user_prompt)
+        user_content = self._build_user_content(
+            user_prompt=user_prompt,
+            image_b64=image_b64,
+            image_media_type=image_media_type,
+        )
+        messages = [
+            Message("system", self._build_system_prompt(enable_tools=False)),
+            Message("user", user_content),
+        ]
+        answer = self._reasoning(messages, self.reasoning_config)
+        return answer, user_prompt
+
+    def _reason_with_tools(
+        self,
+        image_b64: Optional[str] = None,
+        image_media_type: str = "image/jpeg",
+    ) -> tuple[str, str]:
+        """
+        Tool loop driven by working memory:
+          1) retrieve_working_memory()
+          2) ask LLM
+          3) if TOOL_CALL -> execute tool / final_answer
+          4) write tool call/result back to working memory
+          5) next round re-retrieve memory (memory decides compression/windowing)
+        """
+        last_answer = ""
+        last_prompt = ""
+        for _ in range(self._max_tool_steps):
+            user_prompt: str = self._retrieve_working_prompt()
+            last_prompt = user_prompt
+            self.notify_observers(user_prompt)
+            user_content = self._build_user_content(
+                user_prompt=user_prompt,
+                image_b64=image_b64,
+                image_media_type=image_media_type,
+            )
+
+            messages = [
+                Message("system", self._build_system_prompt(enable_tools=True)),
+                Message("user", user_content),
+            ]
+            last_answer = self._reasoning(messages, self.reasoning_config)
+            # 每个子步都记录一条 agent 的 in/out（与 tool 事件解耦）
+            self.meta_memory.add_working_memory(
+                AgentMessage(
+                    agent_name="solver",
+                    user_instruction=user_prompt,
+                    message=last_answer,
+                ),
+                upstream_ids=[],
+            )
+            call = self._tool_executor.parse_tool_call(last_answer)
+            if call is None:
+                if not self._require_final_answer:
+                    return last_answer, last_prompt
+                self.meta_memory.add_working_memory(
+                    (
+                        "SYSTEM_HINT: missing_final_answer_call",
+                        (
+                            "You must terminate by calling final_answer tool.\n"
+                            f"Use: TOOL_CALL\n"
+                            f'{{"name":"{FINAL_ANSWER_TOOL_NAME}","args":{{"answer":"..."}}}}'
+                        ),
+                    ),
+                    event_type="system",
+                    reward=0.0,
+                )
+                continue
+
+            if call.name == FINAL_ANSWER_TOOL_NAME:
+                answer = call.args.get("answer")
+                if isinstance(answer, str):
+                    return answer.strip(), last_prompt
+                return json.dumps(call.args, ensure_ascii=False), last_prompt
+
+            tool_output = self._tool_executor.execute(call)
+            self.notify_observers(
+                f"Tool call: {call.name}({call.args})\nTool output:\n{tool_output[:1500]}"
+            )
+
+            tool_action = f"TOOL_CALL: {call.name} args={json.dumps(call.args, ensure_ascii=False)}"
+            tool_observation = (
+                f"TOOL_RESULT ({call.name}):\n{tool_output}\n\n"
+                "If more tools are needed, emit another TOOL_CALL; otherwise output final answer."
+            )
+            self.meta_memory.add_working_memory(
+                (tool_action, tool_observation),
+                event_type="tool",
+                reward=0.0,
+            )
+        return last_answer, last_prompt
+
+    def _retrieve_working_prompt(self) -> str:
+        prompt = self.meta_memory.retrieve_working_memory(
+            max_chars=self._max_working_memory_chars
+        )
+        if self._max_working_memory_chars and len(prompt) > self._max_working_memory_chars:
+            return prompt[-self._max_working_memory_chars:]
+        return prompt
+
+    def _build_system_prompt(self, enable_tools: bool) -> str:
+        if not enable_tools:
+            return self._system_prompt
+        return (
+            f"{self._system_prompt}\n\n"
+            f"{self._tool_executor.get_tools_prompt()}\n"
+            f"To finish, output exactly:\n"
+            f"TOOL_CALL\n"
+            f'{{"name":"{FINAL_ANSWER_TOOL_NAME}","args":{{"answer":"<final answer>"}}}}'
+        )
+
+    @staticmethod
+    def _build_user_content(
+        user_prompt: str,
+        image_b64: Optional[str] = None,
+        image_media_type: str = "image/jpeg",
+    ):
+        if not image_b64:
+            return user_prompt
+        return [
+            {"type": "input_text", "text": user_prompt},
+            {"type": "input_image", "image_url": {
+                "url": f"data:{image_media_type};base64,{image_b64}"
+            }},
+        ]
 
     # ── Observer ──────────────────────────────────────────────────────────────
 
